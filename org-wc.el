@@ -9,6 +9,10 @@
 ;; Implementation based on:
 ;; - Paul Sexton's word count posted on org-mode mailing list 21/2/11.
 ;; - clock overlays
+;;
+;; v2
+;; 29/4/11
+;; Don't modify buffer, and fixed handling of empty sections.
 
 (defun org-in-heading-line ()
   "Is point in a line starting with `*'?"
@@ -64,8 +68,8 @@ LaTeX macros are counted as 1 word."
           (setf wc (+ 2 wc)))
          (t
           (progn
-            (re-search-forward "\\w+\\W*")
-            (incf wc))))))
+            (and (re-search-forward "\\w+\\W*" end 'skip)
+                 (incf wc)))))))
     wc))
 
 (defun org-wc-count-subtrees ()
@@ -98,7 +102,9 @@ LaTeX macros are counted as 1 word."
   (interactive "r\nP")
   (org-wc-remove-overlays)
   (unless total-only
-    (let (wc p)
+    (let ((bmp (buffer-modified-p))
+          wc
+          p)
       (org-wc-count-subtrees)
       (save-excursion
         (goto-char (point-min))
@@ -112,7 +118,8 @@ LaTeX macros are counted as 1 word."
         ;; Arrange to remove the overlays upon next change.
         (when org-remove-highlights-with-change
           (org-add-hook 'before-change-functions 'org-wc-remove-overlays
-                        nil 'local)))))
+                        nil 'local)))
+    (set-buffer-modified-p bmp)))
   (if mark-active
       (org-word-count beg end)
     (org-word-count (point-min) (point-max))))
