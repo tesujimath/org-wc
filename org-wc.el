@@ -13,7 +13,10 @@
 ;; v2
 ;; 29/4/11
 ;; Don't modify buffer, and fixed handling of empty sections.
-
+;;
+;; v3
+;; 29/4/11
+;; Handle narrowing correctly, so partial word count works on narrowed regions.
 (defun org-in-heading-line ()
   "Is point in a line starting with `*'?"
   (equal (char-after (point-at-bol)) ?*))
@@ -81,11 +84,11 @@ heading."
   (save-excursion
     (goto-char (point-max))
     (while (outline-previous-heading)
-      (org-narrow-to-subtree)
-      (let ((wc (org-word-count-aux (point-min) (point-max))))
-        (put-text-property (point) (point-at-eol) :org-wc wc)
-        (goto-char (point-min))
-        (widen)))))
+      (save-restriction
+        (org-narrow-to-subtree)
+        (let ((wc (org-word-count-aux (point-min) (point-max))))
+          (put-text-property (point) (point-at-eol) :org-wc wc)
+          (goto-char (point-min)))))))
 
 (defun org-wc-display (beg end total-only)
   "Show subtree word counts in the entire buffer.
