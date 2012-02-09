@@ -1,0 +1,4 @@
+* org-wc.el
+This is the `org-wc.el` library by Simon Guest. It was published in the
+emacs-orgmode list, and I placed it here to track the different versions, and
+to make some changes.
