@@ -51,9 +51,13 @@ LaTeX macros are counted as 1 word."
       (goto-char beg)
       (while (< (point) end)
         (cond
-         ;; Ignore heading lines.
+         ;; Ignore heading lines, and sections tagged 'nowc' or 'noexport'.
          ((org-in-heading-line)
-          (forward-line))
+          (let ((tags (org-get-tags-at)))
+            (if (or (member "nowc" tags)
+                    (member "noexport" tags))
+                (outline-next-heading)
+              (forward-line))))
          ;; Ignore blocks.
          ((looking-at block-begin-re)
           (re-search-forward block-end-re))
