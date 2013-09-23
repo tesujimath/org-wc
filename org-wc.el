@@ -23,13 +23,13 @@
 
 (defun org-word-count (beg end)
   "Report the number of words in the Org mode buffer or selected region."
-  (interactive "r")
-  (unless mark-active
-    (setf beg (point-min)
-          end (point-max)))
-  (let ((wc (org-word-count-aux beg end)))
-    (message (format "%d words in %s." wc
-                     (if mark-active "region" "buffer")))))
+  (interactive
+   (if (use-region-p)
+       (list (region-beginning) (region-end))
+     (list (point-min) (point-max))))
+  (message (format "%d words in %s."
+                   (org-word-count-aux beg end)
+                   (if (use-region-p) "region" "buffer"))))
 
 (defun org-word-count-aux (beg end)
   "Report the number of words in the selected region.
