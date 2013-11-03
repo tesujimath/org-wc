@@ -1,10 +1,12 @@
-;; org-wc.el
-;;
-;; Count words in org mode trees.
+;;; org-wc.el --- Count words in org mode trees.
+
+;; Author: Simon Guest
+;; Created: 2011-04-23
+
+;;; Commentary:
+
 ;; Shows word count per heading line, summed over sub-headings.
 ;; Aims to be fast, so doesn't check carefully what it's counting.  ;-)
-;;
-;; Simon Guest, 23/4/11
 ;;
 ;; Implementation based on:
 ;; - Paul Sexton's word count posted on org-mode mailing list 21/2/11.
@@ -17,10 +19,16 @@
 ;; v3
 ;; 29/4/11
 ;; Handle narrowing correctly, so partial word count works on narrowed regions.
-(defun org-in-heading-line ()
+
+;;; Code:
+
+(eval-when-compile (require 'org))
+
+(defun org-wc-in-heading-line ()
   "Is point in a line starting with `*'?"
   (equal (char-after (point-at-bol)) ?*))
 
+;;;###autoload
 (defun org-word-count (beg end)
   "Report the number of words in the Org mode buffer or selected region."
   (interactive
@@ -52,7 +60,7 @@ LaTeX macros are counted as 1 word."
       (while (< (point) end)
         (cond
          ;; Ignore heading lines, and sections tagged 'nowc' or 'noexport'.
-         ((org-in-heading-line)
+         ((org-wc-in-heading-line)
           (let ((tags (org-get-tags-at)))
             (if (or (member "nowc" tags)
                     (member "noexport" tags))
@@ -79,9 +87,9 @@ LaTeX macros are counted as 1 word."
                  (incf wc)))))))
     wc))
 
+;;;###autoload
 (defun org-wc-count-subtrees ()
-  "Count words in each subtree, putting result as the property :org-wc on that
-heading."
+  "Count words in each subtree, putting result as the property :org-wc on that heading."
   (interactive)
   (remove-text-properties (point-min) (point-max)
                           '(:org-wc t))
@@ -94,6 +102,7 @@ heading."
           (put-text-property (point) (point-at-eol) :org-wc wc)
           (goto-char (point-min)))))))
 
+;;;###autoload
 (defun org-wc-display (beg end total-only)
   "Show subtree word counts in the entire buffer.
 With prefix argument, only show the total wordcount for the buffer or region
@@ -135,7 +144,7 @@ LaTeX macros are counted as 1 word."
 (make-variable-buffer-local 'org-wc-overlays)
 
 (defun org-wc-put-overlay (wc &optional level)
-  "Put an overlays on the current line, displaying word count.
+  "Put an overlay on the current line, displaying word count.
 If LEVEL is given, prefix word count with a corresponding number of stars.
 This creates a new overlay and stores it in `org-wc-overlays', so that it
 will be easy to remove."
@@ -158,6 +167,7 @@ will be easy to remove."
       (overlay-put ov 'end-glyph (make-glyph tx)))
     (push ov org-wc-overlays)))
 
+;;;###autoload
 (defun org-wc-remove-overlays (&optional beg end noremove)
   "Remove the occur highlights from the buffer.
 BEG and END are ignored.  If NOREMOVE is nil, remove this function
@@ -171,3 +181,4 @@ from the `before-change-functions' in the current buffer."
                    'org-wc-remove-overlays 'local))))
 
 (provide 'org-wc)
+;;; org-wc.el ends here
