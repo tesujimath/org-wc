@@ -51,10 +51,6 @@ LaTeX macros are counted as 1 word."
         (block-begin-re "^#\\\+BEGIN")
         (block-end-re "^#\\+END")
         (latex-macro-regexp "\\\\[A-Za-z]+\\(\\[[^]]*\\]\\|\\){\\([^}]*\\)}")
-        (drawers-re (concat "^[ \t]*:\\("
-                            (mapconcat 'regexp-quote org-drawers "\\|")
-                            "\\):[ \t]*$"))
-        (drawers-end-re "^[ \t]*:END:"))
     (save-excursion
       (goto-char beg)
       (while (< (point) end)
@@ -70,11 +66,11 @@ LaTeX macros are counted as 1 word."
          ((looking-at block-begin-re)
           (re-search-forward block-end-re))
          ;; Ignore comments.
-         ((org-in-commented-line)
+         ((org-at-comment-p)
           (forward-line))
          ;; Ignore drawers.
-         ((looking-at drawers-re)
-          (re-search-forward drawers-end-re nil t))
+         ((org-in-drawer-p)
+          (forward-line))
          ;; Count latex macros as 1 word, ignoring their arguments.
          ((save-excursion
             (backward-char)
