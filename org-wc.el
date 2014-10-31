@@ -50,7 +50,7 @@ LaTeX macros are counted as 1 word."
   (let ((wc 0)
         (block-begin-re "^#\\\+BEGIN")
         (block-end-re "^#\\+END")
-        (latex-macro-regexp "\\\\[A-Za-z]+\\(\\[[^]]*\\]\\|\\){\\([^}]*\\)}")
+        (latex-macro-regexp "\\\\[A-Za-z]+\\(\\[[^]]*\\]\\|\\){\\([^}]*\\)}"))
     (save-excursion
       (goto-char beg)
       (while (< (point) end)
