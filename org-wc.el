@@ -124,6 +124,9 @@ LaTeX macros are counted as 1 word. "
         (latex-macro-regexp "\\\\[A-Za-z]+\\(\\[[^]]*\\]\\|\\){\\([^}]*\\)}"))
     (save-excursion
       (goto-char beg)
+      ;; Handle the case where we start in a drawer
+      (when (org-at-drawer-p)
+        (org-end-of-meta-data t))
       (while (< (point) end)
         (cond
          ;; Ignore heading lines, and sections with org-wc-ignored-tags
@@ -146,9 +149,7 @@ LaTeX macros are counted as 1 word. "
           (org-wc--goto-char (point-at-eol) end))
          ;; Ignore drawers.
          ((org-at-drawer-p)
-          (progn (goto-char (match-end 0))
-                 (re-search-forward org-property-end-re end t)
-                 (org-wc--goto-char (point-at-eol) end)))
+          (org-end-of-meta-data t))
          ;; Handle links
          ((save-excursion
             (when (< (1+ (point-min)) (point)) (backward-char 2))
