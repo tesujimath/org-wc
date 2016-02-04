@@ -100,7 +100,7 @@ LaTeX macros are counted as 1 word."
           (goto-char (point-min)))))))
 
 ;;;###autoload
-(defun org-wc-display (beg end total-only)
+(defun org-wc-display (total-only)
   "Show subtree word counts in the entire buffer.
 With prefix argument, only show the total wordcount for the buffer or region
 in the echo area.
@@ -112,7 +112,9 @@ Ignores: heading lines,
          comments,
          drawers.
 LaTeX macros are counted as 1 word."
-  (interactive "r\nP")
+  (interactive "P")
+  (let ((beg (if (region-active-p) (region-beginning) (point-min)))
+        (end (if (region-active-p) (region-end) (point-max))))
   (org-wc-remove-overlays)
   (unless total-only
     (let ((bmp (buffer-modified-p))
@@ -133,9 +135,7 @@ LaTeX macros are counted as 1 word."
           (org-add-hook 'before-change-functions 'org-wc-remove-overlays
                         nil 'local)))
     (set-buffer-modified-p bmp)))
-  (if mark-active
-      (org-word-count beg end)
-    (org-word-count (point-min) (point-max))))
+  (org-word-count beg end)))
 
 (defvar org-wc-overlays nil)
 (make-variable-buffer-local 'org-wc-overlays)
