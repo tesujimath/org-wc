@@ -76,7 +76,7 @@ LaTeX macros are counted as 1 word."
                  (forward-line)))
          ;; Count latex macros as 1 word, ignoring their arguments.
          ((save-excursion
-            (backward-char)
+            (if (> (point-min) (point)) (backward-char) )
             (looking-at latex-macro-regexp))
           (goto-char (match-end 0))
           (setf wc (+ 2 wc)))
