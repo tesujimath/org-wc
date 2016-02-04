@@ -49,8 +49,6 @@ Ignores: heading lines,
 LaTeX macros are counted as 1 word."
 
   (let ((wc 0)
-        (block-begin-re "^#\\\+BEGIN")
-        (block-end-re "^#\\+END")
         (latex-macro-regexp "\\\\[A-Za-z]+\\(\\[[^]]*\\]\\|\\){\\([^}]*\\)}"))
     (save-excursion
       (goto-char beg)
@@ -64,17 +62,19 @@ LaTeX macros are counted as 1 word."
                 (outline-next-heading)
               (forward-line))))
          ;; Ignore blocks.
-         ((looking-at block-begin-re)
-          (re-search-forward block-end-re))
+         ((org-at-block-p)
+          (goto-char (match-end 0)))
          ;; Ignore comments.
          ((org-at-comment-p)
           (forward-line))
          ;; Ignore drawers.
-         ((org-in-drawer-p)
-          (forward-line))
+         ((org-at-drawer-p)
+          (progn (goto-char (match-end 0))
+                 (re-search-forward org-property-end-re end t)
+                 (forward-line)))
          ;; Count latex macros as 1 word, ignoring their arguments.
          ((save-excursion
-            (backward-char)
+            (if (> (point-min) (point)) (backward-char) )
             (looking-at latex-macro-regexp))
           (goto-char (match-end 0))
           (setf wc (+ 2 wc)))
@@ -100,7 +100,7 @@ LaTeX macros are counted as 1 word."
           (goto-char (point-min)))))))
 
 ;;;###autoload
-(defun org-wc-display (beg end total-only)
+(defun org-wc-display (total-only)
   "Show subtree word counts in the entire buffer.
 With prefix argument, only show the total wordcount for the buffer or region
 in the echo area.
@@ -112,7 +112,9 @@ Ignores: heading lines,
          comments,
          drawers.
 LaTeX macros are counted as 1 word."
-  (interactive "r\nP")
+  (interactive "P")
+  (let ((beg (if (region-active-p) (region-beginning) (point-min)))
+        (end (if (region-active-p) (region-end) (point-max))))
   (org-wc-remove-overlays)
   (unless total-only
     (let ((bmp (buffer-modified-p))
@@ -133,9 +135,7 @@ LaTeX macros are counted as 1 word."
           (org-add-hook 'before-change-functions 'org-wc-remove-overlays
                         nil 'local)))
     (set-buffer-modified-p bmp)))
-  (if mark-active
-      (org-word-count beg end)
-    (org-word-count (point-min) (point-max))))
+  (org-word-count beg end)))
 
 (defvar org-wc-overlays nil)
 (make-variable-buffer-local 'org-wc-overlays)
