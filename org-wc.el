@@ -49,8 +49,6 @@ Ignores: heading lines,
 LaTeX macros are counted as 1 word."
 
   (let ((wc 0)
-        (block-begin-re "^#\\\+BEGIN")
-        (block-end-re "^#\\+END")
         (latex-macro-regexp "\\\\[A-Za-z]+\\(\\[[^]]*\\]\\|\\){\\([^}]*\\)}"))
     (save-excursion
       (goto-char beg)
@@ -64,15 +62,15 @@ LaTeX macros are counted as 1 word."
                 (outline-next-heading)
               (forward-line))))
          ;; Ignore blocks.
-         ((looking-at block-begin-re)
-          (re-search-forward block-end-re))
+         ((org-at-block-p)
+          (goto-char (match-end 0)))
          ;; Ignore comments.
          ((org-at-comment-p)
           (forward-line))
          ;; Ignore drawers.
          ((org-at-drawer-p)
           (progn (goto-char (match-end 0))
-                 (re-search-forward org-property-end-re (point-max) t)
+                 (re-search-forward org-property-end-re end t)
                  (forward-line)))
          ;; Count latex macros as 1 word, ignoring their arguments.
          ((save-excursion
