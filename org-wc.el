@@ -70,8 +70,10 @@ LaTeX macros are counted as 1 word."
          ((org-at-comment-p)
           (forward-line))
          ;; Ignore drawers.
-         ((org-in-drawer-p)
-          (forward-line))
+         ((org-at-drawer-p)
+          (progn (goto-char (match-end 0))
+                 (re-search-forward org-property-end-re (point-max) t)
+                 (forward-line)))
          ;; Count latex macros as 1 word, ignoring their arguments.
          ((save-excursion
             (backward-char)
