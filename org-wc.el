@@ -22,8 +22,8 @@
 
 ;;; Code:
 
-(eval-when-compile (require 'org)
-                   (require 'cl))
+(eval-when-compile (require 'cl))
+(require 'org)
 
 (defun org-wc-in-heading-line ()
   "Is point in a line starting with `*'?"
