@@ -1,4 +1,13 @@
 * org-wc.el
-This is the `org-wc.el` library by Simon Guest. It was published in the
-emacs-orgmode list, and I placed it here to track the different versions, and
-to make some changes.
+A word count library for emacs org mode.  It shows the word count per
+heading line, summed over sub-headings.
+
+The design goal is to be really fast, rather than to count exactly, so it
+doesn't check too carefully what it's counting.
+
+The implementation is based on
+- Paul Sexton's word count posted on org-mode mailing list on 21 February 2011.
+- clock overlays
+
+This repo was originally hosted on Github by Dato Simó (dato).
+Ownership was subsequently transferred to the original author.
