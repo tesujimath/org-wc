@@ -1,4 +1,4 @@
-;;; org-wc.el --- Count words in org mode trees.
+;;; org-wc.el --- Count words in org mode trees.  -*- lexical-binding: t -*-
 
 ;; This file is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -196,7 +196,7 @@ LaTeX macros are counted as 1 word."
                             (point) :org-wc)))
           (goto-char p)
           (when (setq wc (get-text-property p :org-wc))
-            (org-wc-put-overlay wc (funcall outline-level))))
+            (org-wc-put-overlay wc)))
         ;; Arrange to remove the overlays upon next change.
         (when org-remove-highlights-with-change
           (add-hook 'before-change-functions 'org-wc-remove-overlays
@@ -207,13 +207,12 @@ LaTeX macros are counted as 1 word."
 (defvar org-wc-overlays nil)
 (make-variable-buffer-local 'org-wc-overlays)
 
-(defun org-wc-put-overlay (wc &optional level)
+(defun org-wc-put-overlay (wc)
   "Put an overlay on the current line, displaying word count.
 If LEVEL is given, prefix word count with a corresponding number of stars.
 This creates a new overlay and stores it in `org-wc-overlays', so that it
 will be easy to remove."
   (let* ((c 60)
-         (l (if level (org-get-valid-level level 0) 0))
          (off 0)
          ov tx)
     (org-move-to-column c)
@@ -232,7 +231,7 @@ will be easy to remove."
     (push ov org-wc-overlays)))
 
 ;;;###autoload
-(defun org-wc-remove-overlays (&optional beg end noremove)
+(defun org-wc-remove-overlays (&optional _beg _end noremove)
   "Remove the occur highlights from the buffer.
 BEG and END are ignored.  If NOREMOVE is nil, remove this function
 from the `before-change-functions' in the current buffer."
