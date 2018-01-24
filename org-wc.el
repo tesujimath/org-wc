@@ -35,8 +35,40 @@
 
 ;;; Code:
 
-(eval-when-compile (require 'cl))
 (require 'org)
+(require 'cl-lib)
+
+(defgroup org-wc nil
+  "Options for configuring org-mode wordcount"
+  :group 'org)
+
+(defcustom org-wc-ignored-tags '("nowc" "noexport" "ARCHIVE")
+  "List of tags for which subtrees will be ignored in word counts"
+  :type '(repeat string)
+  :safe #'org-wc-list-of-strings-p)
+
+(defcustom org-wc-ignored-link-types nil
+  "Link types which won't be counted as a word"
+  :type '(repeat string)
+  :safe #'org-wc-list-of-strings-p)
+
+(defcustom org-wc-one-word-link-types '("zotero")
+  "Link types which will be counted as one word"
+  :type '(repeat string)
+  :safe #'org-wc-list-of-strings-p)
+
+(defcustom org-wc-only-description-link-types '("note")
+  "Link types for which only the description should be counted"
+  :type '(repeat string)
+  :safe #'org-wc-list-of-strings-p)
+
+(defcustom org-wc-blocks-to-count '("QUOTE")
+  "List of blocks which should be included in word count."
+  :type '(repeat string)
+  :safe #'org-wc-list-of-strings-p)
+
+(defun org-wc-list-of-strings-p (arg)
+  (cl-every #'stringp arg))
 
 (defun org-wc-in-heading-line ()
   "Is point in a line starting with `*'?"
@@ -67,16 +99,21 @@ LaTeX macros are counted as 1 word."
       (goto-char beg)
       (while (< (point) end)
         (cond
-         ;; Ignore heading lines, and sections tagged 'nowc' or 'noexport'.
+         ;; Ignore heading lines, and sections with org-wc-ignored-tags
          ((org-wc-in-heading-line)
           (let ((tags (org-get-tags-at)))
-            (if (or (member "nowc" tags)
-                    (member "noexport" tags))
+            (if (cl-intersection org-wc-ignored-tags tags :test #'string=)
                 (outline-next-heading)
               (forward-line))))
-         ;; Ignore blocks.
-         ((org-at-block-p)
-          (goto-char (match-end 0)))
+         ;; Ignore most blocks.
+         ((when (save-excursion
+                  (move-beginning-of-line 1)
+                  (looking-at org-block-regexp))
+            (if (member (match-string 1) org-wc-blocks-to-count)
+                (progn ;; go inside block and subtract count of end line
+                  (goto-char (match-beginning 4))
+                  (cl-decf wc))
+              (goto-char (match-end 0)))))
          ;; Ignore comments.
          ((org-at-comment-p)
           (forward-line))
@@ -85,16 +122,33 @@ LaTeX macros are counted as 1 word."
           (progn (goto-char (match-end 0))
                  (re-search-forward org-property-end-re end t)
                  (forward-line)))
+         ;; Handle links
+         ((save-excursion
+            (when (< (1+ (point-min)) (point)) (backward-char 2))
+            (looking-at org-bracket-link-analytic-regexp))
+          (let ((type (match-string 2)))
+            (cond
+             ((member type org-wc-ignored-link-types)
+              (goto-char (match-end 0)))
+             ((member type org-wc-one-word-link-types)
+              (goto-char (match-end 0))
+              (cl-incf wc))
+             ;; count only description, if it exists
+             ((member type org-wc-only-description-link-types)
+              (if (match-beginning 5)
+                  (goto-char (match-beginning 5))
+                (goto-char (match-end 0))))
+             ;; count path (typically one word)
+             (t (goto-char (match-beginning 3))))))
          ;; Count latex macros as 1 word, ignoring their arguments.
          ((save-excursion
-            (if (> (point-min) (point)) (backward-char) )
+            (when (< (point-min) (point)) (backward-char))
             (looking-at latex-macro-regexp))
           (goto-char (match-end 0))
           (setf wc (+ 2 wc)))
          (t
-          (progn
-            (and (re-search-forward "\\w+\\W*" end 'skip)
-                 (incf wc)))))))
+          (and (re-search-forward "\\w+\\W*" end 'skip)
+               (cl-incf wc))))))
     wc))
 
 ;;;###autoload
@@ -128,7 +182,7 @@ LaTeX macros are counted as 1 word."
   (interactive "P")
   (let ((beg (if (region-active-p) (region-beginning) (point-min)))
         (end (if (region-active-p) (region-end) (point-max))))
-  (org-wc-remove-overlays)
+      (org-wc-remove-overlays)
   (unless total-only
     (let ((bmp (buffer-modified-p))
           wc
@@ -145,10 +199,10 @@ LaTeX macros are counted as 1 word."
             (org-wc-put-overlay wc (funcall outline-level))))
         ;; Arrange to remove the overlays upon next change.
         (when org-remove-highlights-with-change
-          (org-add-hook 'before-change-functions 'org-wc-remove-overlays
+          (add-hook 'before-change-functions 'org-wc-remove-overlays
                         nil 'local)))
     (set-buffer-modified-p bmp)))
-  (org-word-count beg end)))
+    (org-word-count beg end)))
 
 (defvar org-wc-overlays nil)
 (make-variable-buffer-local 'org-wc-overlays)
