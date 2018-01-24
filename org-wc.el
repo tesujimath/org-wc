@@ -207,6 +207,10 @@ LaTeX macros are counted as 1 word."
 (defvar org-wc-overlays nil)
 (make-variable-buffer-local 'org-wc-overlays)
 
+(defface org-wc-overlay
+  '((t (:weight bold)))
+  "Face for displaying org-wc overlays.")
+
 (defun org-wc-put-overlay (wc)
   "Put an overlay on the current line, displaying word count.
 If LEVEL is given, prefix word count with a corresponding number of stars.
