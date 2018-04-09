@@ -52,6 +52,19 @@
   :type 'boolean
   :safe #'booleanp)
 
+(defcustom org-wc-default-link-count 'description-or-path
+  "Default way of counting words in links.
+This is applied to any link type not specified in any of
+‘org-wc-ignored-link-types’,‘org-wc-one-word-link-types’, or
+‘org-wc-only-description-link-types’ "
+  :type '(choice
+          (const :tag "Count words in description or else path part of links" description-or-path)
+          (const :tag "Count words only in description part of links" description)
+          (const :tag "Count links as 0 words" ignore)
+          (const :tag "Count links as 1 word" oneword)
+          (const :tag "Count words only in path part of links" path))
+  :safe 'symbolp)
+
 (defcustom org-wc-ignored-link-types nil
   "Link types which won't be counted as a word"
   :type '(repeat string)
@@ -62,8 +75,18 @@
   :type '(repeat string)
   :safe #'org-wc-list-of-strings-p)
 
+(defcustom org-wc-description-or-path-link-types '()
+  "Link types for which the description or the path should be counted"
+  :type '(repeat string)
+  :safe #'org-wc-list-of-strings-p)
+
 (defcustom org-wc-only-description-link-types '("note")
   "Link types for which only the description should be counted"
+  :type '(repeat string)
+  :safe #'org-wc-list-of-strings-p)
+
+(defcustom org-wc-only-path-link-types '()
+  "Link types for which only the path should be counted"
   :type '(repeat string)
   :safe #'org-wc-list-of-strings-p)
 
@@ -81,7 +104,12 @@
 
 ;;;###autoload
 (defun org-word-count (beg end)
-  "Report the number of words in the Org mode buffer or selected region."
+  "Report the number of words in the Org mode buffer or selected region.
+
+Ignores heading lines, blocks, comments, drawers, and links
+depending on customizable variables in customization group org-wc.
+
+LaTeX macros are counted as 1 word. "
   (interactive
    (if (use-region-p)
        (list (region-beginning) (region-end))
@@ -91,13 +119,7 @@
                    (if (use-region-p) "region" "buffer"))))
 
 (defun org-word-count-aux (beg end)
-  "Report the number of words in the selected region.
-Ignores: heading lines,
-         blocks,
-         comments,
-         drawers.
-LaTeX macros are counted as 1 word."
-
+  "Return the number of words between BEG and END."
   (let ((wc 0)
         (latex-macro-regexp "\\\\[A-Za-z]+\\(\\[[^]]*\\]\\|\\){\\([^}]*\\)}"))
     (save-excursion
@@ -131,20 +153,32 @@ LaTeX macros are counted as 1 word."
          ((save-excursion
             (when (< (1+ (point-min)) (point)) (backward-char 2))
             (looking-at org-bracket-link-analytic-regexp))
-          (let ((type (match-string 2)))
-            (cond
-             ((member type org-wc-ignored-link-types)
-              (org-wc--goto-char (match-end 0) end))
-             ((member type org-wc-one-word-link-types)
-              (org-wc--goto-char (match-end 0) end)
-              (cl-incf wc))
-             ;; count only description, if it exists
-             ((member type org-wc-only-description-link-types)
-              (if (match-beginning 5)
-                  (org-wc--goto-char (match-beginning 5) end)
-                (org-wc--goto-char (match-end 0) end)))
-             ;; count path (typically one word)
-             (t (org-wc--goto-char (match-beginning 3) end)))))
+          (let* ((type (match-string 2)))
+            (cl-case (cond ((member type org-wc-ignored-link-types) 'ignore)
+                           ((member type org-wc-one-word-link-types) 'oneword)
+                           ((member type org-wc-only-description-link-types)
+                            'description)
+                           ((member type org-wc-only-path-link-types) 'path)
+                           ((member type org-wc-description-or-path-link-types)
+                            'description-or-path)
+                           (t org-wc-default-link-count))
+              (ignore (org-wc--goto-char-pass-non-words (match-end 0) end))
+              (oneword (org-wc--goto-char-pass-non-words (match-end 0) end)
+                       (cl-incf wc))
+              (description (if (match-beginning 5)
+                               (goto-char (match-beginning 5))
+                             (org-wc--goto-char-pass-non-words
+                              (match-end 0) end)))
+              (path (cl-incf wc (count-words-region (match-beginning 3)
+                                                    (match-end 3)))
+                    (org-wc--goto-char-pass-non-words (match-end 0) end))
+              (description-or-path
+               (if (match-beginning 5)
+                   (goto-char (match-beginning 5))
+                 (cl-incf wc (count-words-region (match-beginning 3)
+                                                 (match-end 3)))
+                 (org-wc--goto-char-pass-non-words (match-end 0) end)))
+              (t (user-error "Error in org-wc link configuration")))))
          ;; Count latex macros as 1 word, ignoring their arguments.
          ((save-excursion
             (when (< (point-min) (point)) (backward-char))
