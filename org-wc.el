@@ -47,6 +47,11 @@
   :type '(repeat string)
   :safe #'org-wc-list-of-strings-p)
 
+(defcustom org-wc-ignore-commented-trees t
+  "Ignore trees with COMMENT-prefix if non-nil."
+  :type 'boolean
+  :safe #'booleanp)
+
 (defcustom org-wc-ignored-link-types nil
   "Link types which won't be counted as a word"
   :type '(repeat string)
@@ -101,10 +106,10 @@ LaTeX macros are counted as 1 word."
         (cond
          ;; Ignore heading lines, and sections with org-wc-ignored-tags
          ((org-wc-in-heading-line)
-          (let ((tags (org-get-tags-at)))
-            (if (cl-intersection org-wc-ignored-tags tags :test #'string=)
-                (outline-next-heading)
-              (forward-line))))
+          (if (or (and org-wc-ignore-commented-trees (org-in-commented-heading-p))
+                  (cl-intersection org-wc-ignored-tags (org-get-tags-at) :test #'string=))
+              (org-end-of-subtree t t)
+            (forward-line)))
          ;; Ignore most blocks.
          ((when (save-excursion
                   (move-beginning-of-line 1)
