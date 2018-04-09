@@ -112,7 +112,7 @@ LaTeX macros are counted as 1 word."
             (forward-line)))
          ;; Ignore most blocks.
          ((when (save-excursion
-                  (move-beginning-of-line 1)
+                  (beginning-of-line 1)
                   (looking-at org-block-regexp))
             (if (member (match-string 1) org-wc-blocks-to-count)
                 (progn ;; go inside block and subtract count of end line
