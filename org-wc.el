@@ -109,24 +109,24 @@ LaTeX macros are counted as 1 word."
           (if (or (and org-wc-ignore-commented-trees (org-in-commented-heading-p))
                   (cl-intersection org-wc-ignored-tags (org-get-tags-at) :test #'string=))
               (org-end-of-subtree t t)
-            (forward-line)))
+            (org-wc--goto-char (point-at-eol) end)))
          ;; Ignore most blocks.
          ((when (save-excursion
                   (beginning-of-line 1)
                   (looking-at org-block-regexp))
             (if (member (match-string 1) org-wc-blocks-to-count)
                 (progn ;; go inside block and subtract count of end line
-                  (goto-char (match-beginning 4))
+                  (org-wc--goto-char (match-beginning 4) end)
                   (cl-decf wc))
-              (goto-char (match-end 0)))))
+              (org-wc--goto-char (match-end 0) end))))
          ;; Ignore comments.
          ((org-at-comment-p)
-          (forward-line))
+          (org-wc--goto-char (point-at-eol) end))
          ;; Ignore drawers.
          ((org-at-drawer-p)
           (progn (goto-char (match-end 0))
                  (re-search-forward org-property-end-re end t)
-                 (forward-line)))
+                 (org-wc--goto-char (point-at-eol) end)))
          ;; Handle links
          ((save-excursion
             (when (< (1+ (point-min)) (point)) (backward-char 2))
@@ -134,23 +134,23 @@ LaTeX macros are counted as 1 word."
           (let ((type (match-string 2)))
             (cond
              ((member type org-wc-ignored-link-types)
-              (goto-char (match-end 0)))
+              (org-wc--goto-char (match-end 0) end))
              ((member type org-wc-one-word-link-types)
-              (goto-char (match-end 0))
+              (org-wc--goto-char (match-end 0) end)
               (cl-incf wc))
              ;; count only description, if it exists
              ((member type org-wc-only-description-link-types)
               (if (match-beginning 5)
-                  (goto-char (match-beginning 5))
-                (goto-char (match-end 0))))
+                  (org-wc--goto-char (match-beginning 5) end)
+                (org-wc--goto-char (match-end 0) end)))
              ;; count path (typically one word)
-             (t (goto-char (match-beginning 3))))))
+             (t (org-wc--goto-char (match-beginning 3) end)))))
          ;; Count latex macros as 1 word, ignoring their arguments.
          ((save-excursion
             (when (< (point-min) (point)) (backward-char))
             (looking-at latex-macro-regexp))
-          (goto-char (match-end 0))
-          (setf wc (+ 2 wc)))
+          (org-wc--goto-char (match-end 0) end)
+          (cl-incf wc))
          (t
           (and (re-search-forward "\\w+\\W*" end 'skip)
                (cl-incf wc))))))
@@ -251,6 +251,17 @@ from the `before-change-functions' in the current buffer."
     (unless noremove
       (remove-hook 'before-change-functions
                    'org-wc-remove-overlays 'local))))
+
+(defun org-wc--goto-char (char end)
+  "Moves point to CHAR and from there passes 0+ non-word characters.
+Searchers to end as a maximum.
+
+This ensures that we are in an expected state (at the first word
+character after some non-word characters) after moving beyond
+headlines, links etc."
+  (goto-char char)
+  (re-search-forward "\\W*" end 'skip))
+
 
 (provide 'org-wc)
 ;;; org-wc.el ends here
