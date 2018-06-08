@@ -162,22 +162,22 @@ LaTeX macros are counted as 1 word. "
                            ((member type org-wc-description-or-path-link-types)
                             'description-or-path)
                            (t org-wc-default-link-count))
-              (ignore (org-wc--goto-char-pass-non-words (match-end 0) end))
-              (oneword (org-wc--goto-char-pass-non-words (match-end 0) end)
+              (ignore (org-wc--goto-char (match-end 0) end))
+              (oneword (org-wc--goto-char (match-end 0) end)
                        (cl-incf wc))
               (description (if (match-beginning 5)
                                (goto-char (match-beginning 5))
-                             (org-wc--goto-char-pass-non-words
+                             (org-wc--goto-char
                               (match-end 0) end)))
               (path (cl-incf wc (count-words-region (match-beginning 3)
                                                     (match-end 3)))
-                    (org-wc--goto-char-pass-non-words (match-end 0) end))
+                    (org-wc--goto-char (match-end 0) end))
               (description-or-path
                (if (match-beginning 5)
                    (goto-char (match-beginning 5))
                  (cl-incf wc (count-words-region (match-beginning 3)
                                                  (match-end 3)))
-                 (org-wc--goto-char-pass-non-words (match-end 0) end)))
+                 (org-wc--goto-char (match-end 0) end)))
               (t (user-error "Error in org-wc link configuration")))))
          ;; Count latex macros as 1 word, ignoring their arguments.
          ((save-excursion
