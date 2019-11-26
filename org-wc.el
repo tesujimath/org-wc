@@ -150,6 +150,9 @@ LaTeX macros are counted as 1 word. "
          ;; Ignore drawers.
          ((org-at-drawer-p)
           (org-end-of-meta-data t))
+         ;; Ignore all other #+ lines
+         ((looking-at "#+")
+          (org-wc--goto-char (point-at-eol) end))
          ;; Handle links
          ((save-excursion
             (when (< (1+ (point-min)) (point)) (backward-char 2))
