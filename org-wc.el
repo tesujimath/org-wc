@@ -132,7 +132,7 @@ LaTeX macros are counted as 1 word. "
          ;; Ignore heading lines, and sections with org-wc-ignored-tags
          ((org-wc-in-heading-line)
           (if (or (and org-wc-ignore-commented-trees (org-in-commented-heading-p))
-                  (cl-intersection org-wc-ignored-tags (org-get-tags-at) :test #'string=))
+                  (cl-intersection org-wc-ignored-tags (org-get-tags) :test #'string=))
               (org-end-of-subtree t t)
             (org-wc--goto-char (point-at-eol) end)))
          ;; Ignore most blocks.
@@ -153,8 +153,9 @@ LaTeX macros are counted as 1 word. "
          ;; Handle links
          ((save-excursion
             (when (< (1+ (point-min)) (point)) (backward-char 2))
-            (looking-at org-bracket-link-analytic-regexp))
-          (let* ((type (match-string 2)))
+            (looking-at org-link-bracket-re))
+          (let* ((type (car (save-match-data (split-string (match-string 1) ":"))))
+                 (pathstart (+ 1 (length type) (match-beginning 1))))
             (cl-case (cond ((member type org-wc-ignored-link-types) 'ignore)
                            ((member type org-wc-one-word-link-types) 'oneword)
                            ((member type org-wc-only-description-link-types)
@@ -166,18 +167,18 @@ LaTeX macros are counted as 1 word. "
               (ignore (org-wc--goto-char (match-end 0) end))
               (oneword (org-wc--goto-char (match-end 0) end)
                        (cl-incf wc))
-              (description (if (match-beginning 5)
-                               (goto-char (match-beginning 5))
+              (description (if (match-beginning 2)
+                               (goto-char (match-beginning 2))
                              (org-wc--goto-char
                               (match-end 0) end)))
-              (path (cl-incf wc (count-words-region (match-beginning 3)
-                                                    (match-end 3)))
+              (path (cl-incf wc (count-words-region pathstart
+                                                    (match-end 1)))
                     (org-wc--goto-char (match-end 0) end))
               (description-or-path
-               (if (match-beginning 5)
-                   (goto-char (match-beginning 5))
-                 (cl-incf wc (count-words-region (match-beginning 3)
-                                                 (match-end 3)))
+               (if (match-beginning 2)
+                   (goto-char (match-beginning 2))
+                 (cl-incf wc (count-words-region pathstart
+                                                 (match-end 1)))
                  (org-wc--goto-char (match-end 0) end)))
               (t (user-error "Error in org-wc link configuration")))))
          ;; Count latex macros as 1 word, ignoring their arguments.
