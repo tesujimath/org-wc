@@ -98,10 +98,6 @@ This is applied to any link type not specified in any of
 (defun org-wc-list-of-strings-p (arg)
   (cl-every #'stringp arg))
 
-(defun org-wc-in-heading-line ()
-  "Is point in a line starting with `*'?"
-  (equal (char-after (point-at-bol)) ?*))
-
 ;;;###autoload
 (defun org-word-count (beg end)
   "Report the number of words in the Org mode buffer or selected region.
@@ -130,7 +126,7 @@ LaTeX macros are counted as 1 word. "
       (while (< (point) end)
         (cond
          ;; Ignore heading lines, and sections with org-wc-ignored-tags
-         ((org-wc-in-heading-line)
+         ((org-at-heading-p)
           (if (or (and org-wc-ignore-commented-trees (org-in-commented-heading-p))
                   (cl-intersection org-wc-ignored-tags (org-get-tags-at) :test #'string=))
               (org-end-of-subtree t t)
