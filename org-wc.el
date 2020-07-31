@@ -123,6 +123,7 @@ LaTeX macros are counted as 1 word. "
 (defun org-word-count-aux (beg end)
   "Return the number of words between BEG and END."
   (let ((wc 0)
+        subtreecount
         (latex-macro-regexp "\\\\[A-Za-z]+\\(\\[[^]]*\\]\\|\\){\\([^}]*\\)}"))
     (save-excursion
       (goto-char beg)
@@ -131,12 +132,19 @@ LaTeX macros are counted as 1 word. "
         (org-end-of-meta-data t))
       (while (< (point) end)
         (cond
-         ;; Ignore heading lines, and sections with org-wc-ignored-tags
+         ;; Handle headlines and subtrees
          ((org-at-heading-p)
-          (if (or (and org-wc-ignore-commented-trees (org-in-commented-heading-p))
-                  (cl-intersection org-wc-ignored-tags (org-get-tags) :test #'string=))
-              (org-end-of-subtree t t)
-            (org-wc--goto-char (point-at-eol) end)))
+          (cond
+           ;; Ignore commented and org-wc-ignored-tags trees
+           ((or (and org-wc-ignore-commented-trees (org-in-commented-heading-p))
+                (cl-intersection org-wc-ignored-tags (org-get-tags) :test #'string=))
+            (org-end-of-subtree t t))
+           ;; Re-use count for subtrees already counted
+           ((setq subtreecount (get-text-property (point) :org-wc))
+            (cl-incf wc subtreecount)
+            (org-end-of-subtree t t))
+           ;; Skip counting words in headline
+           (t (org-wc--goto-char (point-at-eol) end))))
          ;; Ignore most blocks.
          ((when (save-excursion
                   (beginning-of-line 1)
