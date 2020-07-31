@@ -38,6 +38,9 @@
 (require 'org)
 (require 'cl-lib)
 
+(defun org-wc--downcase-list-of-strings-set-default (var val)
+  (set-default var (mapcar #'downcase val)))
+
 (defgroup org-wc nil
   "Options for configuring org-mode wordcount"
   :group 'org)
@@ -90,10 +93,13 @@ This is applied to any link type not specified in any of
   :type '(repeat string)
   :safe #'org-wc-list-of-strings-p)
 
-(defcustom org-wc-blocks-to-count '("QUOTE")
-  "List of blocks which should be included in word count."
+(defcustom org-wc-blocks-to-count '("quote" "verse")
+  "List of blocks which should be included in word count.
+
+Use lower case block names"
   :type '(repeat string)
-  :safe #'org-wc-list-of-strings-p)
+  :safe #'org-wc-list-of-strings-p
+  :set #'org-wc--downcase-list-of-strings-set-default)
 
 (defun org-wc-list-of-strings-p (arg)
   (cl-every #'stringp arg))
@@ -139,7 +145,7 @@ LaTeX macros are counted as 1 word. "
          ((when (save-excursion
                   (beginning-of-line 1)
                   (looking-at org-block-regexp))
-            (if (member (match-string 1) org-wc-blocks-to-count)
+            (if (member (downcase (match-string 1)) org-wc-blocks-to-count)
                 (progn ;; go inside block and subtract count of end line
                   (org-wc--goto-char (match-beginning 4) end)
                   (cl-decf wc))
